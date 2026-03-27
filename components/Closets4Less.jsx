@@ -18,15 +18,15 @@ const C = {
   green:    "#4A6741",        // muted sage (CTA)
 };
 
-/* ─── UNSPLASH CLOSET IMAGES ─── */
+/* ─── LOCAL IMAGES ─── */
 const IMGS = {
-  hero:      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1400&q=80&fit=crop",
-  walk1:     "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&q=80&fit=crop",
-  walk2:     "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=800&q=80&fit=crop",
-  reach:     "https://images.unsplash.com/photo-1609602644879-e2a54481f78e?w=800&q=80&fit=crop",
-  detail1:   "https://images.unsplash.com/photo-1595428773374-5e69b5f42a94?w=600&q=80&fit=crop",
-  detail2:   "https://images.unsplash.com/photo-1558618047-3c8c76ca7d08?w=600&q=80&fit=crop",
-  lifestyle: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&q=80&fit=crop",
+  hero:      "/dressing-room-closet-room-modern-design-3d-rendering.jpg",
+  walk1:     "/large-walkin-closet.webp",
+  walk2:     "/custom-closet-white-wood.webp",
+  reach:     "/custom-closet.webp",
+  detail1:   "/custom glass draws.webp",
+  detail2:   "/abstract-sketch-design-of-interior-walk-in-closet.jpg",
+  lifestyle: "/new-luxury-home.webp",
 };
 
 /* ─── SMALL COMPONENTS ─── */
@@ -282,15 +282,18 @@ export default function Closets4Less() {
           <div>
             <div style={{
               fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 22, fontWeight: 400, color: C.charcoal,
+              fontSize: 22, fontWeight: 400,
+              color: navSolid ? C.charcoal : "#FAF9F6",
               letterSpacing: -.3, lineHeight: 1,
+              transition: "color .4s",
             }}>
-              Closets<span style={{ color: C.brown }}>4</span>Less
+              Closets<span style={{ color: navSolid ? C.brown : C.tan }}>4</span>Less
             </div>
             <div style={{
               fontSize: 8, letterSpacing: 3, textTransform: "uppercase",
-              color: C.muted, fontFamily: "'DM Sans', sans-serif",
-              fontWeight: 500, marginTop: 1,
+              color: navSolid ? C.muted : "rgba(250,249,246,0.55)",
+              fontFamily: "'DM Sans', sans-serif",
+              fontWeight: 500, marginTop: 1, transition: "color .4s",
             }}>
               Luxury · Maricopa County
             </div>
@@ -301,12 +304,13 @@ export default function Closets4Less() {
             {["Our Work", "Collections", "Process", "Contact"].map(l => (
               <a key={l} href="#" style={{
                 fontSize: 11, fontWeight: 500, letterSpacing: 1.5,
-                textTransform: "uppercase", color: C.muted,
+                textTransform: "uppercase",
+                color: navSolid ? C.muted : "rgba(250,249,246,0.8)",
                 textDecoration: "none", fontFamily: "'DM Sans', sans-serif",
                 transition: "color .2s",
               }}
-                onMouseEnter={e => e.target.style.color = C.charcoal}
-                onMouseLeave={e => e.target.style.color = C.muted}
+                onMouseEnter={e => e.target.style.color = navSolid ? C.charcoal : "#FAF9F6"}
+                onMouseLeave={e => e.target.style.color = navSolid ? C.muted : "rgba(250,249,246,0.8)"}
               >
                 {l}
               </a>
@@ -807,7 +811,6 @@ export default function Closets4Less() {
               {[
                 { label: "closets4less.com",      sub: "Website" },
                 { label: "Maricopa County, AZ",   sub: "Service Area" },
-                { label: "Licensed Contractor",    sub: "G3 Home Remodel" },
               ].map((item, i) => (
                 <div key={i} style={{ marginBottom: 14 }}>
                   <div style={{ fontSize: 11, color: "rgba(250,249,246,0.35)", fontFamily: "'DM Sans', sans-serif", marginBottom: 2 }}>
