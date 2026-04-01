@@ -22,10 +22,10 @@ const C = {
 const IMGS = {
   hero:      "/dressing-room-closet-room-modern-design-3d-rendering.jpg",
   walk1:     "/large-walkin-closet.webp",
-  walk2:     "/custom-closet-white-wood.webp",
-  reach:     "/custom-closet.webp",
+  walk2:     "/his -  hers.png",
+  reach:     "/Reach in closet.png",
   detail1:   "/custom glass draws.webp",
-  detail2:   "/abstract-sketch-design-of-interior-walk-in-closet.jpg",
+  detail2:   "/Shoe display.png",
   lifestyle: "/new-luxury-home.webp",
 };
 
