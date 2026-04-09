@@ -1,15 +1,42 @@
+import { Cormorant_Garamond, Manrope } from "next/font/google";
+
 import "./globals.css";
 
+const bodyFont = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
+
+const displayFont = Cormorant_Garamond({
+  subsets: ["latin"],
+  variable: "--font-cormorant",
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
 export const metadata = {
-  title: "Closets4Less | Custom Closets in Maricopa County",
+  title: "Closets4Less | Tactile Wardrobe Studio",
   description:
-    "Custom built-in closets designed for your life — installed with precision, priced without compromise. Serving all of Maricopa County.",
+    "A mobile-first wardrobe experience for custom closets in Maricopa County, with tactile finish stacks, modular planning, and a frictionless free consult flow.",
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f3ede3",
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body
+        className={`${bodyFont.variable} ${displayFont.variable} bg-ivory text-ink antialiased`}
+      >
+        {children}
+      </body>
     </html>
   );
 }

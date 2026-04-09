@@ -1,841 +1,1035 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
+import Image from "next/image";
+import {
+  AnimatePresence,
+  MotionConfig,
+  motion,
+  useInView,
+} from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 
-/* ─── VULPINE-INSPIRED COLOR TOKENS ────────────────────
-   Light, warm, residential — cream / linen / wood / charcoal
-──────────────────────────────────────────────────────── */
-const C = {
-  bg:       "#FAFAF7",        // warm near-white
-  linen:    "#F2EDE5",        // linen panel
-  card:     "#FFFFFF",        // pure white card
-  border:   "#E4DDD3",        // warm divider
-  charcoal: "#1C1A17",        // deep warm black
-  brown:    "#6B4F3A",        // warm wood brown (primary accent)
-  tan:      "#C4A882",        // muted champagne gold
-  muted:    "#8C7D6E",        // warm gray body text
-  soft:     "#F7F3EE",        // softest linen
-  green:    "#4A6741",        // muted sage (CTA)
+const SOFT_CLOSE = {
+  type: "spring",
+  stiffness: 100,
+  damping: 20,
 };
 
-/* ─── LOCAL IMAGES ─── */
-const IMGS = {
-  hero:      "/dressing-room-closet-room-modern-design-3d-rendering.jpg",
-  walk1:     "/large-walkin-closet.webp",
-  walk2:     "/his -  hers.png",
-  reach:     "/Reach in closet.png",
-  detail1:   "/custom glass draws.webp",
-  detail2:   "/Shoe display.png",
-  lifestyle: "/new-luxury-home.webp",
+const DEFAULT_FORM = {
+  name: "",
+  phone: "",
+  email: "",
+  space: "",
+  notes: "",
 };
 
-/* ─── SMALL COMPONENTS ─── */
+const FINISHES = [
+  {
+    id: "obsidian-walnut",
+    family: "dark",
+    heading: "Obsidian Walnut",
+    detail: "Smoked glass wardrobes with satin brass pulls and deep storage towers.",
+    image: "/1.png",
+    badge: "Dark Wood",
+    chips: ["Glass fronts", "Valet tray", "Bronze pulls"],
+  },
+  {
+    id: "taupe-oak",
+    family: "warm",
+    heading: "Taupe Rift Oak",
+    detail: "Open shelving and low drawer banks tuned for a calmer, softer morning rhythm.",
+    image: "/5.png",
+    badge: "Warm Grain",
+    chips: ["Drawer banks", "Open stacks", "Soft-close"],
+  },
+  {
+    id: "atelier-panel",
+    family: "dark",
+    heading: "Atelier Panel",
+    detail: "Tall hanging bays and gallery cabinets with a tailored luxury studio presence.",
+    image: "/10.png",
+    badge: "Gallery Wall",
+    chips: ["Tall hangs", "Display doors", "Shadow lines"],
+  },
+  {
+    id: "ivory-oak",
+    family: "light",
+    heading: "Ivory Oak",
+    detail: "A brighter finish palette with enough warmth to keep the room tactile, not sterile.",
+    image: "/custom-closet-white-wood.webp",
+    badge: "Light Finish",
+    chips: ["White oak", "Integrated bench", "Mirror-ready"],
+  },
+  {
+    id: "grand-suite",
+    family: "signature",
+    heading: "Grand Suite",
+    detail: "A full walk-in composition with layered hanging, island storage, and soft ambient lighting.",
+    image: "/large-walkin-closet.webp",
+    badge: "Signature",
+    chips: ["Island ready", "LED channels", "Shoe gallery"],
+  },
+];
 
-const Divider = ({ style = {} }) => (
-  <div style={{ height: 1, background: C.border, ...style }} />
-);
+const FILTERS = [
+  { id: "all", label: "All Finishes" },
+  { id: "dark", label: "Dark Woods" },
+  { id: "warm", label: "Warm Grain" },
+  { id: "light", label: "Light Oak" },
+  { id: "signature", label: "Signature" },
+];
 
-const Label = ({ children, color = C.brown }) => (
-  <div style={{
-    fontSize: 10, letterSpacing: 4, textTransform: "uppercase",
-    color, fontFamily: "'DM Sans', sans-serif",
-    fontWeight: 500, marginBottom: 14,
-  }}>
-    {children}
-  </div>
-);
+const TRUST_STRIP = [
+  "44px touch-safe controls",
+  "Soft-close motion tuned to spring physics",
+  "Priority-loaded hero imagery",
+  "Maricopa County consults seven days a week",
+];
 
-const Display = ({ children, style = {} }) => (
-  <h2 style={{
-    fontFamily: "'Cormorant Garamond', serif",
-    fontSize: "clamp(34px, 5vw, 56px)",
-    fontWeight: 300, color: C.charcoal,
-    lineHeight: 1.1, letterSpacing: -.5,
-    ...style,
-  }}>
-    {children}
-  </h2>
-);
+const PROCESS_STEPS = [
+  {
+    label: "01",
+    title: "Measure the room",
+    text: "We map traffic flow, reach zones, and accessory density in person so every module has a reason to exist.",
+  },
+  {
+    label: "02",
+    title: "Tune the finish deck",
+    text: "You swipe through finish stacks, hardware, and lighting until the room feels materially correct.",
+  },
+  {
+    label: "03",
+    title: "Soft-close install",
+    text: "Licensed installers protect the home, fit the system cleanly, and leave with every glide dialed in.",
+  },
+];
 
-const Body = ({ children, style = {} }) => (
-  <p style={{
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize: 15, color: C.muted,
-    lineHeight: 1.8, fontWeight: 300,
-    ...style,
-  }}>
-    {children}
-  </p>
-);
+const DRAWER_LINKS = [
+  { id: "hero", label: "Space Perfected" },
+  { id: "finishes", label: "Finish Stacks" },
+  { id: "modules", label: "Modular Grid" },
+  { id: "consult", label: "Design Consult" },
+];
 
-const CTA = ({ children, variant = "dark", onClick, style = {} }) => {
-  const [hov, setHov] = useState(false);
-  const dark = variant === "dark";
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: hov
-          ? (dark ? C.brown : "transparent")
-          : (dark ? C.charcoal : "transparent"),
-        color: dark ? "#FFF" : C.charcoal,
-        border: dark ? "none" : `1px solid ${C.charcoal}`,
-        padding: dark ? "14px 34px" : "13px 33px",
-        fontFamily: "'DM Sans', sans-serif",
-        fontSize: 12, fontWeight: 500, letterSpacing: 2,
-        textTransform: "uppercase",
-        cursor: "pointer",
-        transition: "background .25s, color .25s",
-        ...style,
-      }}
-    >
-      {children}
-    </button>
-  );
-};
+const CONSULT_REASONS = [
+  "Free in-home consult",
+  "3D layout recommendations",
+  "Licensed and insured installation",
+  "Most installs finished in one to two days",
+];
 
-/* ─── FEATURE CARD ─── */
-const FeatureCard = ({ icon, title, desc }) => (
-  <div style={{
-    padding: "32px 28px",
-    borderTop: `2px solid ${C.border}`,
-    background: C.card,
-  }}>
-    <div style={{ fontSize: 28, marginBottom: 18 }}>{icon}</div>
-    <div style={{
-      fontFamily: "'Cormorant Garamond', serif",
-      fontSize: 21, fontWeight: 400, color: C.charcoal,
-      marginBottom: 12, lineHeight: 1.2,
-    }}>
-      {title}
-    </div>
-    <Body style={{ fontSize: 14 }}>{desc}</Body>
-  </div>
-);
+const ModularGrid = dynamic(() => import("@/components/ModularGrid"), {
+  loading: () => <ModularGridSkeleton />,
+});
 
-/* ─── PROCESS STEP ─── */
-const Step = ({ n, title, desc }) => (
-  <div style={{ display: "flex", gap: 24, alignItems: "flex-start" }}>
-    <div style={{
-      fontFamily: "'Cormorant Garamond', serif",
-      fontSize: 48, fontWeight: 300, color: C.tan,
-      lineHeight: 1, flexShrink: 0, width: 36, textAlign: "right",
-    }}>
-      {n}
-    </div>
-    <div style={{ paddingTop: 6 }}>
-      <div style={{
-        fontFamily: "'Cormorant Garamond', serif",
-        fontSize: 20, fontWeight: 500, color: C.charcoal,
-        marginBottom: 6,
-      }}>
-        {title}
-      </div>
-      <Body style={{ fontSize: 14 }}>{desc}</Body>
-    </div>
-  </div>
-);
-
-/* ─── GALLERY ITEM ─── */
-const GalleryItem = ({ src, label, aspect = "4/3" }) => {
-  const [hov, setHov] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{ overflow: "hidden", position: "relative" }}
-    >
-      <div style={{
-        aspectRatio: aspect,
-        overflow: "hidden",
-        background: C.linen,
-      }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} alt={label} style={{
-          width: "100%", height: "100%", objectFit: "cover",
-          transform: hov ? "scale(1.04)" : "scale(1)",
-          transition: "transform .6s cubic-bezier(.22,1,.36,1)",
-          display: "block",
-        }} />
-      </div>
-      {label && (
-        <div style={{
-          marginTop: 10,
-          fontFamily: "'DM Sans', sans-serif",
-          fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
-          color: C.muted,
-        }}>
-          {label}
-        </div>
-      )}
-    </div>
-  );
-};
-
-/* ─── LEAD FORM ─── */
-function LeadForm() {
-  const [form, setForm]   = useState({ name: "", phone: "", email: "", type: "" });
-  const [done, setDone]   = useState(false);
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-
-  if (done) {
-    return (
-      <div style={{ textAlign: "center", padding: "32px 0" }}>
-        <div style={{
-          fontFamily: "'Cormorant Garamond', serif",
-          fontSize: 32, fontWeight: 300, color: C.charcoal,
-          marginBottom: 12,
-        }}>
-          We'll be in touch.
-        </div>
-        <Body>Your consultation request has been received. Expect a call within one business day.</Body>
-      </div>
-    );
+function rotateItems(items, offset) {
+  if (!items.length) {
+    return items;
   }
 
-  const inputStyle = {
-    width: "100%",
-    background: C.bg,
-    border: `1px solid ${C.border}`,
-    padding: "13px 16px",
-    fontFamily: "'DM Sans', sans-serif",
-    fontSize: 14, color: C.charcoal,
-    transition: "border-color .2s",
-    appearance: "none",
-  };
+  const safeOffset = offset % items.length;
 
+  return [...items.slice(safeOffset), ...items.slice(0, safeOffset)];
+}
+
+function C4LMark({ className = "h-5 w-16" }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <input placeholder="First & Last Name"
-          value={form.name} onChange={e => set("name", e.target.value)}
-          style={inputStyle}
-        />
-        <input placeholder="Phone Number"
-          value={form.phone} onChange={e => set("phone", e.target.value)}
-          style={inputStyle}
-        />
-      </div>
-      <input placeholder="Email Address"
-        value={form.email} onChange={e => set("email", e.target.value)}
-        style={inputStyle}
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      viewBox="0 0 82 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M18 4H9.5C5.36 4 2 7.36 2 11.5S5.36 19 9.5 19H18"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2.2"
       />
-      <select
-        value={form.type} onChange={e => set("type", e.target.value)}
-        style={{ ...inputStyle, color: form.type ? C.charcoal : C.muted }}
-      >
-        <option value="" disabled>Closet Type — Select One</option>
-        <option>Walk-In Closet</option>
-        <option>Reach-In Closet</option>
-        <option>Master Suite Wardrobe</option>
-        <option>Pantry / Laundry</option>
-        <option>Custom — Multiple Spaces</option>
-      </select>
-      <CTA
-        variant="dark"
-        onClick={() => { if (form.name && form.phone) setDone(true); }}
-        style={{ marginTop: 4, width: "100%", padding: "15px" }}
-      >
-        Request Free Design Consultation
-      </CTA>
-      <Body style={{ fontSize: 12, textAlign: "center" }}>
-        No pressure. No obligation. We come to you.
-      </Body>
+      <path
+        d="M36 2V22"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2.2"
+      />
+      <path
+        d="M27 13H44"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2.2"
+      />
+      <path
+        d="M45 2L29 18"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2.2"
+      />
+      <path
+        d="M58 3V21H76"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="2.2"
+      />
+    </svg>
+  );
+}
+
+function Label({ children }) {
+  return (
+    <span className="champagne-label inline-flex items-center rounded-full border border-white/50 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.32em] shadow-[0_10px_30px_-20px_rgba(24,18,13,0.55)]">
+      {children}
+    </span>
+  );
+}
+
+function ModularGridSkeleton() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {[0, 1, 2, 3].map((item) => (
+        <div
+          key={item}
+          className="overflow-hidden rounded-[1.75rem] border border-white/50 bg-white/55 p-4 shadow-[0_30px_60px_-40px_rgba(24,18,13,0.45)] backdrop-blur"
+        >
+          <div className="aspect-[4/5] animate-pulse rounded-[1.35rem] bg-[rgba(195,160,108,0.18)]" />
+          <div className="mt-4 h-4 w-24 animate-pulse rounded-full bg-[rgba(138,101,67,0.18)]" />
+          <div className="mt-3 h-8 w-3/4 animate-pulse rounded-full bg-[rgba(138,101,67,0.14)]" />
+          <div className="mt-4 h-20 animate-pulse rounded-[1rem] bg-[rgba(103,90,75,0.08)]" />
+        </div>
+      ))}
     </div>
   );
 }
 
-/* ─── MAIN PAGE ─── */
-export default function Closets4Less() {
-  const [navSolid, setNavSolid]   = useState(false);
-  const [menuOpen, setMenuOpen]   = useState(false);
-  const formRef = useRef(null);
-
-  useEffect(() => {
-    const onScroll = () => setNavSolid(window.scrollY > 60);
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  const scrollToForm = () =>
-    formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-
-  const sec = { maxWidth: 1100, margin: "0 auto", padding: "0 32px" };
-
+function ToastViewport({ toasts, onDismiss }) {
   return (
-    <div style={{ background: C.bg, fontFamily: "'DM Sans', sans-serif", minHeight: "100vh" }}>
-
-      {/* ── NAV ── */}
-      <nav style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 200,
-        background: navSolid ? "rgba(250,250,247,0.96)" : "transparent",
-        backdropFilter: navSolid ? "blur(12px)" : "none",
-        borderBottom: navSolid ? `1px solid ${C.border}` : "none",
-        transition: "background .4s, border .4s",
-        height: 64,
-        display: "flex", alignItems: "center",
-      }}>
-        <div style={{ ...sec, display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-          {/* Logo */}
-          <div>
-            <div style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 22, fontWeight: 400,
-              color: navSolid ? C.charcoal : "#FAF9F6",
-              letterSpacing: -.3, lineHeight: 1,
-              transition: "color .4s",
-            }}>
-              Closets<span style={{ color: navSolid ? C.brown : C.tan }}>4</span>Less
-            </div>
-            <div style={{
-              fontSize: 8, letterSpacing: 3, textTransform: "uppercase",
-              color: navSolid ? C.muted : "rgba(250,249,246,0.55)",
-              fontFamily: "'DM Sans', sans-serif",
-              fontWeight: 500, marginTop: 1, transition: "color .4s",
-            }}>
-              Luxury · Maricopa County
-            </div>
-          </div>
-
-          {/* Nav links */}
-          <div style={{ display: "flex", gap: 36, alignItems: "center" }}>
-            {["Our Work", "Collections", "Process", "Contact"].map(l => (
-              <a key={l} href="#" style={{
-                fontSize: 11, fontWeight: 500, letterSpacing: 1.5,
-                textTransform: "uppercase",
-                color: navSolid ? C.muted : "rgba(250,249,246,0.8)",
-                textDecoration: "none", fontFamily: "'DM Sans', sans-serif",
-                transition: "color .2s",
-              }}
-                onMouseEnter={e => e.target.style.color = navSolid ? C.charcoal : "#FAF9F6"}
-                onMouseLeave={e => e.target.style.color = navSolid ? C.muted : "rgba(250,249,246,0.8)"}
-              >
-                {l}
-              </a>
-            ))}
-            <CTA variant="dark" onClick={scrollToForm} style={{ padding: "10px 22px", fontSize: 10 }}>
-              Free Consultation
-            </CTA>
-          </div>
-        </div>
-      </nav>
-
-      {/* ══════════════════════════════════
-          HERO
-      ══════════════════════════════════ */}
-      <section style={{ position: "relative", height: "100vh", minHeight: 640, overflow: "hidden" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={IMGS.hero} alt="Luxury walk-in closet" style={{
-          position: "absolute", inset: 0,
-          width: "100%", height: "100%",
-          objectFit: "cover", objectPosition: "center",
-        }} />
-        {/* Warm overlay */}
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "linear-gradient(135deg, rgba(28,26,23,0.58) 0%, rgba(28,26,23,0.25) 60%, rgba(28,26,23,0.1) 100%)",
-        }} />
-
-        <div style={{
-          position: "relative", zIndex: 2,
-          height: "100%", display: "flex", flexDirection: "column",
-          justifyContent: "flex-end", padding: "0 64px 80px",
-          maxWidth: 1100, margin: "0 auto",
-        }}>
-          <div className="fade-up d1">
-            <Label style={{ color: "rgba(196,168,130,0.9)" }}>Closets4Less · Phoenix, AZ</Label>
-          </div>
-          <h1 className="fade-up d2" style={{
-            fontFamily: "'Cormorant Garamond', serif",
-            fontSize: "clamp(48px, 7vw, 88px)",
-            fontWeight: 300, color: "#FAF9F6",
-            lineHeight: 1.02, letterSpacing: -.5,
-            marginBottom: 24, maxWidth: 700,
-          }}>
-            The closet<br />
-            <em style={{ fontStyle: "italic", fontWeight: 300 }}>you've always imagined.</em>
-          </h1>
-          <p className="fade-up d3" style={{
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 16, color: "rgba(250,249,246,0.75)",
-            lineHeight: 1.75, maxWidth: 440,
-            fontWeight: 300, marginBottom: 36,
-          }}>
-            Custom built-in closets designed for your life —
-            installed with precision, priced without compromise.
-          </p>
-          <div className="fade-up d4" style={{ display: "flex", gap: 14 }}>
-            <CTA onClick={scrollToForm} variant="dark">
-              Book Free Consultation
-            </CTA>
-            <CTA variant="light" style={{ color: "#FAF9F6", borderColor: "rgba(250,249,246,0.45)", fontSize: 11 }}>
-              View Our Work
-            </CTA>
-          </div>
-        </div>
-
-        {/* Scroll cue */}
-        <div className="fade-in d6" style={{
-          position: "absolute", bottom: 32, right: 64,
-          display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-        }}>
-          <div style={{
-            fontSize: 9, letterSpacing: 3, textTransform: "uppercase",
-            color: "rgba(250,249,246,0.45)", fontFamily: "'DM Sans', sans-serif",
-            writingMode: "vertical-rl",
-          }}>
-            Scroll
-          </div>
-          <div style={{
-            width: 1, height: 40,
-            background: "linear-gradient(to bottom, rgba(250,249,246,0.45), transparent)",
-          }} />
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          INTRO STRIP
-      ══════════════════════════════════ */}
-      <section style={{ background: C.charcoal, padding: "22px 0" }}>
-        <div style={{ ...sec, display: "flex", gap: 48, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
-          {["Custom Design Included", "Licensed & Insured Install", "Maricopa County", "No-Obligation Estimate"].map((item, i) => (
-            <div key={i} style={{
-              display: "flex", alignItems: "center", gap: 10,
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: 11, letterSpacing: 1.5,
-              textTransform: "uppercase", color: "rgba(250,249,246,0.65)",
-            }}>
-              <div style={{ width: 4, height: 4, borderRadius: "50%", background: C.tan }} />
-              {item}
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          INTRO EDITORIAL
-      ══════════════════════════════════ */}
-      <section style={{ padding: "100px 0 80px" }}>
-        <div style={{ ...sec, display: "grid", gridTemplateColumns: "1fr 2fr", gap: 80, alignItems: "end" }}>
-          <div>
-            <Label>Our Philosophy</Label>
-            <div style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 14, fontWeight: 300, color: C.muted,
-              lineHeight: 1.9, letterSpacing: .3,
-            }}>
-              A well-designed closet isn't about storage.<br />
-              It's about starting the day with intention.
-            </div>
-          </div>
-          <div>
-            <Display style={{ marginBottom: 24 }}>
-              Luxury doesn't have to mean<br />
-              <em>out of reach.</em>
-            </Display>
-            <Body style={{ maxWidth: 540 }}>
-              We bring the craftsmanship and attention to detail of a high-end interior
-              designer — without the high-end price tag. Every closet we design is custom
-              to your space, your style, and the way you actually live. No cookie-cutter
-              systems. No big-box assembly. Just beautifully built closets, installed right,
-              by a licensed contractor you can trust.
-            </Body>
-          </div>
-        </div>
-      </section>
-
-      <Divider style={{ maxWidth: 1036, margin: "0 auto" }} />
-
-      {/* ══════════════════════════════════
-          GALLERY — BENTO STYLE
-      ══════════════════════════════════ */}
-      <section style={{ padding: "80px 0" }}>
-        <div style={{ ...sec }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 40 }}>
-            <div>
-              <Label>The Work</Label>
-              <Display>Spaces we've<br /><em>transformed.</em></Display>
-            </div>
-            <CTA variant="outline" style={{
-              color: C.charcoal, border: `1px solid ${C.charcoal}`,
-              padding: "11px 26px", fontSize: 10,
-            }}>
-              View Full Gallery
-            </CTA>
-          </div>
-
-          {/* Bento grid */}
-          <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", gridTemplateRows: "auto auto", gap: 16 }}>
-            <div style={{ gridRow: "1 / 3" }}>
-              <GalleryItem src={IMGS.walk1} label="Walk-In · Master Suite" aspect="3/4" />
-            </div>
-            <GalleryItem src={IMGS.walk2} label="Walk-In · His & Hers" aspect="4/3" />
-            <GalleryItem src={IMGS.reach} label="Reach-In · Bedroom" aspect="4/3" />
-            <GalleryItem src={IMGS.detail1} label="Drawer Detail" aspect="4/3" />
-            <GalleryItem src={IMGS.detail2} label="Shoe Display" aspect="4/3" />
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          COLLECTIONS
-      ══════════════════════════════════ */}
-      <section style={{ background: C.linen, padding: "80px 0" }}>
-        <div style={sec}>
-          <Label>Collections</Label>
-          <Display style={{ marginBottom: 12 }}>Built for every home.<br /><em>Designed for yours.</em></Display>
-          <Body style={{ marginBottom: 48, maxWidth: 480 }}>
-            Three signature collections. Endless finish options. One standard: exceptional.
-          </Body>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2 }}>
-            {[
-              {
-                name: "The Classic", icon: "◻",
-                desc: "Clean lines. Warm wood tones. Timeless organization that complements any home style.",
-                features: ["Shaker-style hanging bars", "Pull-out shoe racks", "Soft-close drawers", "Built-in LED lighting"],
-                price: "From $1,800 installed",
-                color: C.tan,
-              },
-              {
-                name: "The Luxe", icon: "◈",
-                desc: "Floor-to-ceiling presence. Velvet-lined drawers. The kind of closet you show off to guests.",
-                features: ["Full-height cabinetry", "Integrated island", "Mirror panels", "Jewelry + accessory drawers"],
-                price: "From $4,200 installed",
-                color: C.brown,
-                featured: true,
-              },
-              {
-                name: "The Studio", icon: "◇",
-                desc: "Minimal footprint. Maximum function. Perfect for reach-ins, guest rooms, or smaller spaces.",
-                features: ["Double hang systems", "Adjustable shelving", "Modular add-ons", "Clean matte finishes"],
-                price: "From $950 installed",
-                color: C.muted,
-              },
-            ].map((col, i) => (
-              <div key={i} style={{
-                background: col.featured ? C.charcoal : C.card,
-                padding: "36px 28px",
-                position: "relative",
-              }}>
-                {col.featured && (
-                  <div style={{
-                    position: "absolute", top: 20, right: 20,
-                    fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
-                    background: C.brown, color: "#fff",
-                    padding: "4px 10px", fontFamily: "'DM Sans', sans-serif",
-                    fontWeight: 600,
-                  }}>
-                    Most Popular
-                  </div>
-                )}
-                <div style={{ fontSize: 24, color: col.color, marginBottom: 16 }}>{col.icon}</div>
-                <div style={{
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: 26, fontWeight: 400,
-                  color: col.featured ? "#FAF9F6" : C.charcoal,
-                  marginBottom: 12,
-                }}>
-                  {col.name}
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] z-50 flex justify-center px-4">
+      <div className="flex w-full max-w-md flex-col gap-3">
+        <AnimatePresence initial={false}>
+          {toasts.map((toast) => (
+            <motion.div
+              key={toast.id}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="pointer-events-auto overflow-hidden rounded-[1.3rem] border border-[rgba(24,18,13,0.12)] bg-[linear-gradient(180deg,rgba(248,239,223,0.97),rgba(224,202,160,0.96))] p-4 text-ink shadow-[0_28px_50px_-30px_rgba(24,18,13,0.65)]"
+              exit={{ opacity: 0, y: 18, scale: 0.96 }}
+              initial={{ opacity: 0, y: 20, scale: 0.96 }}
+              layout
+            >
+              <div className="flex items-start gap-3">
+                <div className="rounded-full border border-black/10 bg-white/55 p-2 text-bronze">
+                  <C4LMark className="h-4 w-10" />
                 </div>
-                <p style={{
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontSize: 13, color: col.featured ? "rgba(250,249,246,0.6)" : C.muted,
-                  lineHeight: 1.75, fontWeight: 300, marginBottom: 24,
-                }}>
-                  {col.desc}
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 28 }}>
-                  {col.features.map((f, j) => (
-                    <div key={j} style={{
-                      display: "flex", gap: 10, alignItems: "center",
-                      fontSize: 12, fontFamily: "'DM Sans', sans-serif",
-                      color: col.featured ? "rgba(250,249,246,0.75)" : C.muted,
-                      fontWeight: 300,
-                    }}>
-                      <div style={{ width: 16, height: 1, background: col.color, flexShrink: 0 }} />
-                      {f}
-                    </div>
-                  ))}
-                </div>
-                <Divider style={{ background: col.featured ? "rgba(255,255,255,0.1)" : C.border, marginBottom: 20 }} />
-                <div style={{
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: 18, fontWeight: 400,
-                  color: col.featured ? C.tan : C.brown,
-                  marginBottom: 16,
-                }}>
-                  {col.price}
+                <div className="min-w-0 flex-1">
+                  <p className="text-[0.65rem] font-bold uppercase tracking-[0.35em] text-smoke">
+                    {toast.label}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold leading-5">
+                    {toast.title}
+                  </p>
                 </div>
                 <button
-                  onClick={() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })}
-                  style={{
-                    background: "transparent",
-                    border: `1px solid ${col.featured ? "rgba(250,249,246,0.3)" : C.border}`,
-                    color: col.featured ? "rgba(250,249,246,0.85)" : C.charcoal,
-                    padding: "10px 20px", cursor: "pointer",
-                    fontSize: 10, fontFamily: "'DM Sans', sans-serif",
-                    letterSpacing: 2, textTransform: "uppercase",
-                    fontWeight: 500, width: "100%",
-                    transition: "all .2s",
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.background = col.featured ? "rgba(250,249,246,0.08)" : C.linen;
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.background = "transparent";
-                  }}
+                  aria-label="Dismiss notification"
+                  className="tactile-control flex h-11 w-11 items-center justify-center rounded-full border border-black/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(231,220,203,0.94))] text-sm font-semibold text-ink"
+                  onClick={() => onDismiss(toast.id)}
+                  type="button"
                 >
-                  Get This Look
+                  ×
                 </button>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          WHY US
-      ══════════════════════════════════ */}
-      <section style={{ padding: "80px 0" }}>
-        <div style={sec}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 80 }}>
-            <div>
-              <Label>Why Closets4Less</Label>
-              <Display style={{ fontSize: "clamp(28px, 4vw, 44px)" }}>
-                Craft you can<br /><em>feel.</em>
-              </Display>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-              <FeatureCard
-                icon="🪵"
-                title="Premium Materials"
-                desc="Every build uses European-engineered panels, solid hardwood accents, and soft-close hardware rated for 100,000+ cycles."
-              />
-              <FeatureCard
-                icon="📐"
-                title="Custom to the Inch"
-                desc="We measure your space precisely and build to fit — no gaps, no filler panels, no off-the-shelf compromises."
-              />
-              <FeatureCard
-                icon="🏠"
-                title="Licensed Contractor"
-                desc="Fully licensed, bonded, and insured. Every installation is done right, on time, and backed by a craftsmanship guarantee."
-              />
-              <FeatureCard
-                icon="💡"
-                title="Integrated Lighting"
-                desc="Every collection can include warm LED lighting — motion-activated, dimmable, and beautifully placed."
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          LIFESTYLE BAND
-      ══════════════════════════════════ */}
-      <section style={{ position: "relative", height: 480, overflow: "hidden" }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={IMGS.lifestyle} alt="Luxury home" style={{
-          width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 30%", display: "block",
-        }} />
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "linear-gradient(to right, rgba(28,26,23,0.75) 0%, rgba(28,26,23,0.3) 60%)",
-          display: "flex", alignItems: "center",
-        }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 64px" }}>
-            <div style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: "clamp(28px, 4vw, 52px)",
-              fontWeight: 300, color: "#FAF9F6",
-              lineHeight: 1.15, maxWidth: 520,
-              marginBottom: 24,
-            }}>
-              "The details aren't the details.<br />
-              <em>They make the design."</em>
-            </div>
-            <div style={{ fontSize: 11, letterSpacing: 2, color: C.tan, fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
-              — Charles Eames
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          PROCESS
-      ══════════════════════════════════ */}
-      <section style={{ background: C.soft, padding: "80px 0" }}>
-        <div style={{ ...sec, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 100, alignItems: "start" }}>
-          <div>
-            <Label>The Process</Label>
-            <Display style={{ marginBottom: 16 }}>
-              Simple from<br /><em>start to finish.</em>
-            </Display>
-            <Body>
-              Most installations are complete in one to two days.
-              You get a custom-designed closet and never deal with the chaos of a full renovation.
-            </Body>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 36, paddingTop: 8 }}>
-            <Step
-              n="01"
-              title="Free In-Home Consultation"
-              desc="We come to you. Measure the space, understand how you live, and walk through design options together."
-            />
-            <Divider />
-            <Step
-              n="02"
-              title="Custom Design Presentation"
-              desc="Within 48 hours, we present a 3D rendering of your new closet with finish options, pricing, and a firm install date."
-            />
-            <Divider />
-            <Step
-              n="03"
-              title="Precision Installation"
-              desc="Our crew arrives, protects your home, and installs everything clean and plumb. Usually one full day."
-            />
-            <Divider />
-            <Step
-              n="04"
-              title="The Reveal"
-              desc="We walk you through every detail, answer every question, and don't leave until you love it."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          CONSULTATION FORM
-      ══════════════════════════════════ */}
-      <section ref={formRef} style={{ padding: "80px 0", background: C.bg }}>
-        <div style={{ ...sec, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start" }}>
-          <div>
-            <Label>Get Started</Label>
-            <Display style={{ marginBottom: 20 }}>
-              Book your free<br /><em>design consultation.</em>
-            </Display>
-            <Body style={{ marginBottom: 32 }}>
-              We serve all of Maricopa County. Consultations are free,
-              no-pressure, and done in your home so we can see the space
-              exactly as it is.
-            </Body>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {[
-                { icon: "📍", label: "Serving All of Maricopa County" },
-                { icon: "📅", label: "Available 7 Days a Week"        },
-                { icon: "✓",  label: "Licensed & Insured Contractor"  },
-                { icon: "⚡", label: "Most Installs Complete in 1 Day" },
-              ].map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                  <div style={{ fontSize: 16, width: 24, textAlign: "center" }}>{item.icon}</div>
-                  <div style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: 13, color: C.muted, fontWeight: 300,
-                  }}>
-                    {item.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{
-            background: C.card, padding: "40px 36px",
-            border: `1px solid ${C.border}`,
-          }}>
-            <div style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 24, fontWeight: 400, color: C.charcoal,
-              marginBottom: 6,
-            }}>
-              Request a Consultation
-            </div>
-            <Body style={{ fontSize: 13, marginBottom: 28 }}>
-              Fill this out and we'll reach out within one business day to schedule.
-            </Body>
-            <LeadForm />
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════
-          FOOTER
-      ══════════════════════════════════ */}
-      <footer style={{
-        background: C.charcoal, padding: "48px 0 36px",
-        borderTop: `3px solid ${C.brown}`,
-      }}>
-        <div style={{ ...sec }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1fr", gap: 48, marginBottom: 48 }}>
-            <div>
-              <div style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: 26, fontWeight: 300, color: "#FAF9F6",
-                marginBottom: 4,
-              }}>
-                Closets<span style={{ color: C.tan }}>4</span>Less
-              </div>
-              <div style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: "rgba(250,249,246,0.35)", marginBottom: 16 }}>
-                Luxury · Maricopa County
-              </div>
-              <p style={{
-                fontFamily: "'DM Sans', sans-serif",
-                fontSize: 13, color: "rgba(250,249,246,0.45)",
-                lineHeight: 1.75, fontWeight: 300, maxWidth: 280,
-              }}>
-                Custom built-in closets designed for your home and installed by a licensed contractor. Serving all of Maricopa County.
-              </p>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: C.tan, fontWeight: 500, marginBottom: 18 }}>
-                Collections
-              </div>
-              {["Walk-In Closets", "Reach-In Closets", "Master Wardrobes", "Pantry Systems", "Custom Builds"].map(l => (
-                <div key={l} style={{
-                  fontSize: 13, color: "rgba(250,249,246,0.45)",
-                  fontFamily: "'DM Sans', sans-serif",
-                  fontWeight: 300, marginBottom: 10, cursor: "pointer",
-                }}>
-                  {l}
-                </div>
-              ))}
-            </div>
-            <div>
-              <div style={{ fontSize: 10, letterSpacing: 3, textTransform: "uppercase", color: C.tan, fontWeight: 500, marginBottom: 18 }}>
-                Contact
-              </div>
-              {[
-                { label: "closets4less.com",      sub: "Website" },
-                { label: "Maricopa County, AZ",   sub: "Service Area" },
-              ].map((item, i) => (
-                <div key={i} style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 11, color: "rgba(250,249,246,0.35)", fontFamily: "'DM Sans', sans-serif", marginBottom: 2 }}>
-                    {item.sub}
-                  </div>
-                  <div style={{ fontSize: 13, color: "rgba(250,249,246,0.65)", fontFamily: "'DM Sans', sans-serif", fontWeight: 300 }}>
-                    {item.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <Divider style={{ background: "rgba(250,249,246,0.08)", marginBottom: 24 }} />
-
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div style={{ fontSize: 11, color: "rgba(250,249,246,0.25)", fontFamily: "'DM Sans', sans-serif" }}>
-              © 2026 Closets4Less · Built by SNRG Labs
-            </div>
-            <div style={{ fontSize: 11, color: "rgba(250,249,246,0.25)", fontFamily: "'DM Sans', sans-serif" }}>
-              Licensed · Insured · Maricopa County, AZ
-            </div>
-          </div>
-        </div>
-      </footer>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </div>
+  );
+}
+
+function BottomDrawer({ open, onClose, onNavigate }) {
+  return (
+    <AnimatePresence>
+      {open ? (
+        <>
+          <motion.button
+            animate={{ opacity: 1 }}
+            aria-label="Close menu"
+            className="fixed inset-0 z-40 bg-[rgba(24,18,13,0.32)] backdrop-blur-[2px]"
+            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            onClick={onClose}
+            type="button"
+          />
+          <motion.div
+            animate={{ y: 0 }}
+            aria-modal="true"
+            className="fixed inset-x-0 bottom-0 z-50 rounded-t-[2rem] border border-white/20 bg-[linear-gradient(180deg,rgba(31,24,19,0.96),rgba(24,18,13,0.98))] px-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] pt-3 text-ivory shadow-[0_-20px_50px_-18px_rgba(0,0,0,0.45)]"
+            exit={{ y: "100%" }}
+            id="bottom-drawer"
+            initial={{ y: "100%" }}
+            role="dialog"
+          >
+            <div className="mx-auto max-w-4xl">
+              <div className="mb-5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-full border border-white/10 bg-white/5 p-2 text-gold">
+                    <C4LMark className="h-5 w-12" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-gold/70">
+                      Drawer Menu
+                    </p>
+                    <p className="font-serif text-2xl">Tactile Wardrobe</p>
+                  </div>
+                </div>
+                <button
+                  aria-label="Close navigation drawer"
+                  className="tactile-control flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.04))] text-lg text-ivory"
+                  onClick={onClose}
+                  type="button"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="mb-6 flex justify-center">
+                <div className="h-1.5 w-14 rounded-full bg-white/20" />
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                {DRAWER_LINKS.map((link) => (
+                  <button
+                    key={link.id}
+                    className="tactile-control flex w-full items-center justify-between rounded-[1.35rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.04))] px-4 py-4 text-left text-base font-semibold text-ivory"
+                    onClick={() => onNavigate(link.id)}
+                    type="button"
+                  >
+                    <span>{link.label}</span>
+                    <span className="text-gold">↗</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-6 rounded-[1.6rem] border border-white/10 bg-white/6 p-5">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-gold/70">
+                  Service Envelope
+                </p>
+                <p className="mt-3 font-serif text-2xl">Maricopa County luxury installs.</p>
+                <p className="mt-2 text-sm leading-6 text-ivory/70">
+                  Free consults, finish planning, and licensed installation without the big-box friction.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+function usePullToRefresh(containerRef, onRefresh) {
+  const refreshActionRef = useRef(onRefresh);
+  const refreshingRef = useRef(false);
+  const armedRef = useRef(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isArmed, setIsArmed] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+
+  refreshActionRef.current = onRefresh;
+
+  useEffect(() => {
+    refreshingRef.current = isRefreshing;
+  }, [isRefreshing]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+
+    if (!container) {
+      return undefined;
+    }
+
+    let startY = 0;
+    let pulling = false;
+
+    const resetPull = () => {
+      armedRef.current = false;
+      setIsArmed(false);
+      setPullDistance(0);
+    };
+
+    const handleStart = (event) => {
+      if (refreshingRef.current || container.scrollTop > 0) {
+        return;
+      }
+
+      startY = event.touches[0]?.clientY ?? 0;
+      pulling = true;
+    };
+
+    const handleMove = (event) => {
+      if (!pulling) {
+        return;
+      }
+
+      const currentY = event.touches[0]?.clientY ?? startY;
+      const delta = currentY - startY;
+
+      if (delta <= 0 || container.scrollTop > 0) {
+        resetPull();
+        return;
+      }
+
+      event.preventDefault();
+
+      const dampedDistance = Math.min(98, delta * 0.55);
+      const armed = dampedDistance >= 70;
+
+      armedRef.current = armed;
+      setIsArmed(armed);
+      setPullDistance(dampedDistance);
+    };
+
+    const handleEnd = async () => {
+      if (!pulling) {
+        return;
+      }
+
+      pulling = false;
+
+      if (armedRef.current && !refreshingRef.current) {
+        setIsRefreshing(true);
+        refreshingRef.current = true;
+        setPullDistance(72);
+        await refreshActionRef.current?.();
+        setIsRefreshing(false);
+        refreshingRef.current = false;
+      }
+
+      resetPull();
+    };
+
+    container.addEventListener("touchstart", handleStart, { passive: true });
+    container.addEventListener("touchmove", handleMove, { passive: false });
+    container.addEventListener("touchend", handleEnd);
+    container.addEventListener("touchcancel", handleEnd);
+
+    return () => {
+      container.removeEventListener("touchstart", handleStart);
+      container.removeEventListener("touchmove", handleMove);
+      container.removeEventListener("touchend", handleEnd);
+      container.removeEventListener("touchcancel", handleEnd);
+    };
+  }, [containerRef]);
+
+  return { isRefreshing, isArmed, pullDistance };
+}
+
+export default function Closets4Less() {
+  const scrollRef = useRef(null);
+  const modularRef = useRef(null);
+  const modularInView = useInView(modularRef, {
+    once: true,
+    margin: "260px 0px",
+  });
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [filter, setFilter] = useState("all");
+  const [form, setForm] = useState(DEFAULT_FORM);
+  const [submitted, setSubmitted] = useState(false);
+  const [refreshCycle, setRefreshCycle] = useState(0);
+  const [toasts, setToasts] = useState([]);
+
+  useEffect(() => {
+    if (!drawerOpen) {
+      return undefined;
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        setDrawerOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [drawerOpen]);
+
+  const pushToast = (label, title) => {
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+    setToasts((current) => [...current, { id, label, title }]);
+
+    window.setTimeout(() => {
+      setToasts((current) => current.filter((toast) => toast.id !== id));
+    }, 3400);
+  };
+
+  const { isRefreshing, isArmed, pullDistance } = usePullToRefresh(
+    scrollRef,
+    async () => {
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 700);
+      });
+
+      setRefreshCycle((current) => current + 1);
+      pushToast("Finish Deck", "New finish order loaded into the tactile stack.");
+    },
+  );
+
+  const visibleFinishes = rotateItems(FINISHES, refreshCycle).filter((finish) => {
+    if (filter === "all") {
+      return true;
+    }
+
+    return finish.family === filter;
+  });
+
+  const dismissToast = (toastId) => {
+    setToasts((current) => current.filter((toast) => toast.id !== toastId));
+  };
+
+  const scrollToSection = (sectionId) => {
+    const node = document.getElementById(sectionId);
+
+    setDrawerOpen(false);
+    node?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const updateField = (key, value) => {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  const handleConsultSubmit = (event) => {
+    event.preventDefault();
+
+    if (!form.name || !form.phone || !form.email || !form.space) {
+      pushToast("Consult Form", "Add name, phone, email, and space type to continue.");
+      return;
+    }
+
+    setSubmitted(true);
+    setForm(DEFAULT_FORM);
+    pushToast("Consult Queued", "A Closets4Less designer will confirm within one business day.");
+  };
+
+  return (
+    <MotionConfig reducedMotion="user" transition={SOFT_CLOSE}>
+      <div className="relative h-[100dvh] overflow-hidden bg-ivory text-ink">
+        <motion.div
+          animate={{
+            opacity: pullDistance > 0 || isRefreshing ? 1 : 0,
+            y: pullDistance > 0 || isRefreshing ? 0 : -24,
+          }}
+          className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center px-4 pt-[calc(env(safe-area-inset-top)+0.45rem)]"
+        >
+          <motion.div
+            className="flex items-center gap-3 rounded-full border border-white/60 bg-white/78 px-4 py-3 shadow-[0_20px_40px_-28px_rgba(24,18,13,0.6)] backdrop-blur-xl"
+            style={{ y: pullDistance * 0.16 }}
+          >
+            <motion.div
+              animate={
+                isRefreshing
+                  ? { rotate: 360 }
+                  : { rotate: isArmed ? 18 : 0, scale: isArmed ? 1.02 : 1 }
+              }
+              transition={
+                isRefreshing
+                  ? { repeat: Infinity, duration: 1.1, ease: "linear" }
+                  : SOFT_CLOSE
+              }
+            >
+              <C4LMark className="h-5 w-14 text-bronze" />
+            </motion.div>
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-smoke">
+              {isRefreshing
+                ? "Refreshing finish decks"
+                : isArmed
+                  ? "Release to refresh"
+                  : "Pull to refresh C4L"}
+            </p>
+          </motion.div>
+        </motion.div>
+
+        <div
+          ref={scrollRef}
+          className={`relative h-full overflow-x-hidden pb-[calc(env(safe-area-inset-bottom)+7.25rem)] ${
+            drawerOpen ? "overflow-hidden" : "overflow-y-auto"
+          }`}
+        >
+          <header className="pointer-events-none fixed inset-x-0 top-0 z-30 px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
+            <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+              <div className="pointer-events-auto glass-panel flex items-center gap-3 rounded-full border border-white/60 px-4 py-3 shadow-[0_24px_60px_-40px_rgba(24,18,13,0.55)]">
+                <C4LMark className="h-5 w-14 text-bronze" />
+                <div>
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-smoke">
+                    Closets4Less
+                  </p>
+                  <p className="font-serif text-[1.05rem] leading-none">Tactile Wardrobe</p>
+                </div>
+              </div>
+
+              <div className="pointer-events-auto hidden rounded-full border border-white/60 bg-white/45 px-4 py-3 text-right text-[0.68rem] font-semibold uppercase tracking-[0.32em] text-smoke shadow-[0_24px_60px_-40px_rgba(24,18,13,0.55)] backdrop-blur-xl sm:block">
+                Phoenix · Maricopa County
+              </div>
+            </div>
+          </header>
+
+          <main className="relative">
+            <section
+              className="scroll-mt-32 px-4 pb-6 pt-[calc(env(safe-area-inset-top)+6.25rem)]"
+              id="hero"
+            >
+              <div className="mx-auto grid max-w-6xl gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  className="relative order-1 overflow-hidden rounded-[2.25rem] border border-white/35 shadow-[0_40px_80px_-45px_rgba(24,18,13,0.7)]"
+                  initial={{ opacity: 0, y: 24 }}
+                >
+                  <div className="relative min-h-[29rem] sm:min-h-[35rem] lg:min-h-[43rem]">
+                    <Image
+                      alt="Space Perfected luxury walk-in closet"
+                      className="object-cover"
+                      fill
+                      priority
+                      quality={78}
+                      sizes="100vw"
+                      src="/dressing-room-closet-room-modern-design-3d-rendering.jpg"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(160deg,rgba(24,18,13,0.12),rgba(24,18,13,0.75))]" />
+                    <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 lg:p-8">
+                      <Label>Space Perfected</Label>
+                      <h1 className="mt-4 max-w-[14ch] font-serif text-[clamp(3rem,12vw,6.75rem)] leading-[0.94] tracking-[-0.04em] text-white">
+                        Space
+                        <br />
+                        Perfected.
+                      </h1>
+                      <p className="mt-4 max-w-md text-sm leading-7 text-white/78 sm:text-base">
+                        A bottom-driven wardrobe experience built around thumb-zone ergonomics, tactile motion, and modular finish selection.
+                      </p>
+                      <button
+                        className="tactile-control mt-6 inline-flex items-center gap-3 rounded-full border border-white/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.04))] px-4 py-3 text-sm font-semibold text-white backdrop-blur-md"
+                        onClick={() => scrollToSection("finishes")}
+                        type="button"
+                      >
+                        Swipe the finish stacks
+                        <span className="text-gold">↘</span>
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  className="order-2 rounded-[2rem] border border-[rgba(24,18,13,0.08)] bg-[rgba(255,250,242,0.82)] p-5 shadow-[0_30px_80px_-50px_rgba(24,18,13,0.55)] backdrop-blur-xl sm:p-7 lg:p-8"
+                  initial={{ opacity: 0, y: 32 }}
+                >
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.36em] text-bronze">
+                    Mobile Luxury Protocol
+                  </p>
+                  <h2 className="mt-4 max-w-[12ch] font-serif text-4xl leading-none tracking-[-0.03em] text-ink sm:text-5xl">
+                    The closet should feel built before it is bought.
+                  </h2>
+                  <p className="mt-5 text-sm leading-7 text-smoke sm:text-base">
+                    Every touch target clears 44px, the action rail lives in the thumb zone, and every motion closes with the calm resistance of premium drawer hardware.
+                  </p>
+
+                  <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                    {[
+                      { value: "100", unit: "spring", detail: "stiffness" },
+                      { value: "20", unit: "damping", detail: "soft-close tuning" },
+                      { value: "16", unit: "px", detail: "minimum form input size" },
+                      { value: "0", unit: "alerts", detail: "custom toast only" },
+                    ].map((item) => (
+                      <div
+                        key={item.detail}
+                        className="rounded-[1.45rem] border border-[rgba(24,18,13,0.08)] bg-white/55 p-4"
+                      >
+                        <p className="font-serif text-4xl leading-none text-ink">
+                          {item.value}
+                          <span className="ml-1 text-xl text-bronze">{item.unit}</span>
+                        </p>
+                        <p className="mt-2 text-[0.7rem] font-semibold uppercase tracking-[0.28em] text-smoke">
+                          {item.detail}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+            </section>
+
+            <section className="px-4 py-3">
+              <div className="mx-auto flex max-w-6xl gap-3 overflow-x-auto pb-2 hide-scrollbar">
+                {TRUST_STRIP.map((item) => (
+                  <div
+                    key={item}
+                    className="shrink-0 rounded-full border border-[rgba(24,18,13,0.08)] bg-white/60 px-4 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-smoke shadow-[0_16px_30px_-24px_rgba(24,18,13,0.38)] backdrop-blur"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="scroll-mt-28 px-4 py-8 sm:py-12" id="finishes">
+              <div className="mx-auto max-w-6xl">
+                <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                  <div className="max-w-2xl">
+                    <Label>Swipe-to-Reveal</Label>
+                    <h2 className="mt-4 font-serif text-4xl leading-none tracking-[-0.03em] text-ink sm:text-5xl">
+                      Closet finishes that snap like a modular rail.
+                    </h2>
+                    <p className="mt-4 text-sm leading-7 text-smoke sm:text-base">
+                      Each deck uses responsive Next image srcsets, mandatory horizontal snap points, and low-friction card geometry sized for one-hand browsing.
+                    </p>
+                  </div>
+
+                  <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
+                    {FILTERS.map((item) => {
+                      const active = filter === item.id;
+
+                      return (
+                        <button
+                          key={item.id}
+                          className={`tactile-control shrink-0 rounded-full border px-4 py-3 text-sm font-semibold ${
+                            active
+                              ? "border-[rgba(24,18,13,0.1)] bg-[linear-gradient(180deg,rgba(241,227,197,0.95),rgba(198,159,96,0.98))] text-ink"
+                              : "border-[rgba(24,18,13,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(231,220,203,0.94))] text-smoke"
+                          }`}
+                          onClick={() => setFilter(item.id)}
+                          type="button"
+                        >
+                          {item.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="-mx-4 mt-7 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 hide-scrollbar">
+                  {visibleFinishes.map((finish, index) => (
+                    <motion.article
+                      key={finish.id}
+                      className="grain-shell snap-start overflow-hidden rounded-[2rem] border border-white/10 text-white shadow-[0_38px_70px_-44px_rgba(24,18,13,0.9)]"
+                      initial={{ opacity: 0, y: 24 }}
+                      transition={{ ...SOFT_CLOSE, delay: index * 0.06 }}
+                      viewport={{ amount: 0.15, once: true }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                    >
+                      <div className="flex h-full min-w-[82vw] max-w-[82vw] flex-col sm:min-w-[22rem] sm:max-w-[22rem] lg:min-w-[24rem] lg:max-w-[24rem]">
+                        <div className="relative aspect-[4/5]">
+                          <Image
+                            alt={`${finish.heading} closet finish`}
+                            className="object-cover"
+                            fill
+                            quality={70}
+                            sizes="(max-width: 640px) 82vw, (max-width: 1024px) 22rem, 24rem"
+                            src={finish.image}
+                          />
+                          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,12,9,0)_0%,rgba(17,12,9,0.12)_48%,rgba(17,12,9,0.76)_100%)]" />
+                          <div className="absolute left-4 top-4 rounded-full border border-white/20 bg-black/20 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-gold backdrop-blur-sm">
+                            {finish.badge}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-1 flex-col p-5">
+                          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-gold/80">
+                            Tactile Finish
+                          </p>
+                          <h3 className="mt-3 font-serif text-3xl leading-none tracking-[-0.03em]">
+                            {finish.heading}
+                          </h3>
+                          <p className="mt-4 text-sm leading-7 text-white/72">
+                            {finish.detail}
+                          </p>
+
+                          <div className="mt-5 flex flex-wrap gap-2">
+                            {finish.chips.map((chip) => (
+                              <span
+                                key={chip}
+                                className="rounded-full border border-white/14 bg-white/6 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/80"
+                              >
+                                {chip}
+                              </span>
+                            ))}
+                          </div>
+
+                          <button
+                            className="tactile-control mt-6 flex w-full items-center justify-between rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(250,243,232,0.95),rgba(222,199,156,0.96))] px-4 py-3 text-sm font-semibold text-ink"
+                            onClick={() => scrollToSection("consult")}
+                            type="button"
+                          >
+                            <span>Book this palette</span>
+                            <span className="text-[0.68rem] uppercase tracking-[0.28em] text-smoke">
+                              Free consult
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    </motion.article>
+                  ))}
+                </div>
+
+                <p className="mt-4 text-sm leading-6 text-smoke">
+                  Pull from the very top edge to refresh the stack. The C4L mark replaces the browser spinner inside this scroll shell.
+                </p>
+              </div>
+            </section>
+
+            <section className="scroll-mt-28 px-4 py-8 sm:py-12" id="modules" ref={modularRef}>
+              <div className="mx-auto max-w-6xl">
+                <div className="mb-7 max-w-2xl">
+                  <Label>Lazy Modular Grid</Label>
+                  <h2 className="mt-4 font-serif text-4xl leading-none tracking-[-0.03em] text-ink sm:text-5xl">
+                    Off-screen modules stay light until the user asks for them.
+                  </h2>
+                  <p className="mt-4 text-sm leading-7 text-smoke sm:text-base">
+                    The modular grid is dynamically imported and mounted only near the viewport, reducing initial work while keeping texture-rich imagery sharp on demand.
+                  </p>
+                </div>
+
+                {modularInView ? (
+                  <ModularGrid onConsult={() => scrollToSection("consult")} />
+                ) : (
+                  <ModularGridSkeleton />
+                )}
+              </div>
+            </section>
+
+            <section className="scroll-mt-28 px-4 py-8 sm:py-12" id="consult">
+              <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+                <motion.div
+                  className="overflow-hidden rounded-[2rem] border border-[rgba(24,18,13,0.08)] bg-[rgba(255,250,242,0.82)] shadow-[0_30px_80px_-50px_rgba(24,18,13,0.55)] backdrop-blur-xl"
+                  initial={{ opacity: 0, y: 32 }}
+                  viewport={{ amount: 0.15, once: true }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                >
+                  <div className="relative aspect-[16/10]">
+                    <Image
+                      alt="Closets4Less design consult environment"
+                      className="object-cover"
+                      fill
+                      quality={72}
+                      sizes="(max-width: 1024px) 100vw, 46vw"
+                      src="/new-luxury-home.webp"
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(24,18,13,0.08),rgba(24,18,13,0.74))]" />
+                    <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+                      <Label>Soft-Close Workflow</Label>
+                      <h2 className="mt-4 max-w-[12ch] font-serif text-4xl leading-none tracking-[-0.03em] text-white">
+                        The consult should move with the same calm resistance as the product.
+                      </h2>
+                    </div>
+                  </div>
+
+                  <div className="space-y-5 p-5 sm:p-6">
+                    {PROCESS_STEPS.map((step) => (
+                      <div
+                        key={step.label}
+                        className="rounded-[1.4rem] border border-[rgba(24,18,13,0.08)] bg-white/62 p-4"
+                      >
+                        <div className="flex gap-4">
+                          <div className="font-serif text-4xl leading-none text-bronze">
+                            {step.label}
+                          </div>
+                          <div>
+                            <p className="font-serif text-2xl leading-none text-ink">
+                              {step.title}
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-smoke">
+                              {step.text}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  className="overflow-hidden rounded-[2rem] border border-white/12 bg-[linear-gradient(180deg,rgba(29,22,17,0.96),rgba(24,18,13,0.98))] text-ivory shadow-[0_30px_80px_-50px_rgba(24,18,13,0.75)]"
+                  initial={{ opacity: 0, y: 32 }}
+                  viewport={{ amount: 0.15, once: true }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                >
+                  <div className="border-b border-white/10 p-5 sm:p-6">
+                    <Label>Design Consult</Label>
+                    <h2 className="mt-4 font-serif text-4xl leading-none tracking-[-0.03em] text-white">
+                      Book the free consult from the thumb zone or right here.
+                    </h2>
+                    <p className="mt-4 text-sm leading-7 text-white/68 sm:text-base">
+                      No pressure, no alerts, no zoom-jump form fields. Just a clean request and a fast callback.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[0.72fr_1fr]">
+                    <div className="space-y-3">
+                      {CONSULT_REASONS.map((reason) => (
+                        <div
+                          key={reason}
+                          className="rounded-[1.35rem] border border-white/10 bg-white/6 px-4 py-4 text-sm font-semibold text-white/82"
+                        >
+                          {reason}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div>
+                      {submitted ? (
+                        <motion.div
+                          animate={{ opacity: 1, y: 0 }}
+                          className="rounded-[1.6rem] border border-white/10 bg-white/6 p-5"
+                          initial={{ opacity: 0, y: 14 }}
+                        >
+                          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-gold/75">
+                            Consult queued
+                          </p>
+                          <h3 className="mt-3 font-serif text-3xl leading-none text-white">
+                            A designer will reach out within one business day.
+                          </h3>
+                          <p className="mt-4 text-sm leading-7 text-white/68">
+                            Your request is staged. Use the finish stacks to refine the mood before the call.
+                          </p>
+                          <button
+                            className="tactile-control mt-6 rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(250,243,232,0.95),rgba(222,199,156,0.96))] px-4 py-3 text-sm font-semibold text-ink"
+                            onClick={() => scrollToSection("finishes")}
+                            type="button"
+                          >
+                            Review finish stacks
+                          </button>
+                        </motion.div>
+                      ) : (
+                        <form className="space-y-4" onSubmit={handleConsultSubmit}>
+                          <input
+                            autoComplete="name"
+                            className="min-h-12 w-full rounded-[1.35rem] border border-white/10 bg-white/6 px-4 py-3 text-base text-white placeholder:text-white/36 outline-none transition focus:border-gold/70 focus:bg-white/10"
+                            onChange={(event) => updateField("name", event.target.value)}
+                            placeholder="First and last name"
+                            type="text"
+                            value={form.name}
+                          />
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <input
+                              autoComplete="tel"
+                              className="min-h-12 w-full rounded-[1.35rem] border border-white/10 bg-white/6 px-4 py-3 text-base text-white placeholder:text-white/36 outline-none transition focus:border-gold/70 focus:bg-white/10"
+                              inputMode="tel"
+                              onChange={(event) => updateField("phone", event.target.value)}
+                              placeholder="Phone number"
+                              type="tel"
+                              value={form.phone}
+                            />
+                            <input
+                              autoComplete="email"
+                              className="min-h-12 w-full rounded-[1.35rem] border border-white/10 bg-white/6 px-4 py-3 text-base text-white placeholder:text-white/36 outline-none transition focus:border-gold/70 focus:bg-white/10"
+                              onChange={(event) => updateField("email", event.target.value)}
+                              placeholder="Email address"
+                              type="email"
+                              value={form.email}
+                            />
+                          </div>
+                          <select
+                            className="min-h-12 w-full rounded-[1.35rem] border border-white/10 bg-white/6 px-4 py-3 text-base text-white outline-none transition focus:border-gold/70 focus:bg-white/10"
+                            onChange={(event) => updateField("space", event.target.value)}
+                            value={form.space}
+                          >
+                            <option className="text-ink" value="">
+                              Space type
+                            </option>
+                            <option className="text-ink" value="Walk-In Closet">
+                              Walk-In Closet
+                            </option>
+                            <option className="text-ink" value="Reach-In Closet">
+                              Reach-In Closet
+                            </option>
+                            <option className="text-ink" value="Primary Wardrobe">
+                              Primary Wardrobe
+                            </option>
+                            <option className="text-ink" value="Pantry or Laundry">
+                              Pantry or Laundry
+                            </option>
+                          </select>
+                          <textarea
+                            className="min-h-32 w-full rounded-[1.35rem] border border-white/10 bg-white/6 px-4 py-3 text-base text-white placeholder:text-white/36 outline-none transition focus:border-gold/70 focus:bg-white/10"
+                            onChange={(event) => updateField("notes", event.target.value)}
+                            placeholder="Project notes, finish preferences, or installation timing"
+                            value={form.notes}
+                          />
+                          <button
+                            className="tactile-control flex w-full items-center justify-between rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(250,243,232,0.95),rgba(222,199,156,0.96))] px-5 py-4 text-sm font-semibold text-ink"
+                            type="submit"
+                          >
+                            <span>Book free consult</span>
+                            <span className="text-[0.68rem] uppercase tracking-[0.3em] text-smoke">
+                              No obligation
+                            </span>
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </section>
+
+            <footer className="px-4 pb-10 pt-2">
+              <div className="mx-auto flex max-w-6xl flex-col gap-4 rounded-[2rem] border border-[rgba(24,18,13,0.08)] bg-white/58 p-5 shadow-[0_30px_80px_-55px_rgba(24,18,13,0.5)] backdrop-blur-xl sm:flex-row sm:items-end sm:justify-between sm:p-6">
+                <div>
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-smoke">
+                    Closets4Less
+                  </p>
+                  <p className="mt-2 font-serif text-3xl leading-none text-ink">
+                    Luxury closet systems for Maricopa County.
+                  </p>
+                </div>
+                <p className="max-w-xl text-sm leading-6 text-smoke">
+                  Built on Next.js App Router, Tailwind utilities, Framer Motion spring transitions, branded pull-to-refresh, and a fixed thumb-zone action rail with safe-area protection.
+                </p>
+              </div>
+            </footer>
+          </main>
+        </div>
+
+        <ToastViewport onDismiss={dismissToast} toasts={toasts} />
+
+        <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+          <div className="pointer-events-auto flex w-full max-w-4xl items-center gap-3 rounded-[1.75rem] border border-white/12 bg-[rgba(24,18,13,0.9)] p-3 shadow-[0_26px_50px_-18px_rgba(24,18,13,0.7)] backdrop-blur-xl">
+            <button
+              aria-controls="bottom-drawer"
+              aria-expanded={drawerOpen}
+              className="tactile-control flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.04))] text-base font-semibold text-white"
+              onClick={() => setDrawerOpen(true)}
+              type="button"
+            >
+              ≡
+            </button>
+            <button
+              className="tactile-control flex-1 rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.04))] px-4 py-3 text-sm font-semibold text-white"
+              onClick={() => scrollToSection("finishes")}
+              type="button"
+            >
+              Browse finish stacks
+            </button>
+            <button
+              className="tactile-control flex-1 rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(250,243,232,0.96),rgba(222,199,156,0.96))] px-4 py-3 text-sm font-semibold text-ink"
+              onClick={() => scrollToSection("consult")}
+              type="button"
+            >
+              Book free consult
+            </button>
+          </div>
+        </div>
+
+        <BottomDrawer
+          onClose={() => setDrawerOpen(false)}
+          onNavigate={scrollToSection}
+          open={drawerOpen}
+        />
+      </div>
+    </MotionConfig>
   );
 }
