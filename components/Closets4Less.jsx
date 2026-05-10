@@ -81,10 +81,10 @@ const FILTERS = [
 ];
 
 const TRUST_STRIP = [
-  "44px touch-safe controls",
-  "Soft-close motion tuned to spring physics",
-  "Priority-loaded hero imagery",
-  "Maricopa County consults seven days a week",
+  "Free in-home consultation",
+  "Custom-built to the millimeter",
+  "Licensed & insured installation",
+  "Maricopa County — seven days a week",
 ];
 
 const PROCESS_STEPS = [
@@ -609,7 +609,7 @@ export default function Closets4Less() {
                         Perfected.
                       </h1>
                       <p className="mt-4 max-w-md text-sm leading-7 text-white/78 sm:text-base">
-                        A bottom-driven wardrobe experience built around thumb-zone ergonomics, tactile motion, and modular finish selection.
+                        Luxury custom closets designed around how you actually live — and installed in under three days.
                       </p>
                       <button
                         className="tactile-control mt-6 inline-flex items-center gap-3 rounded-full border border-white/20 bg-[linear-gradient(180deg,rgba(255,255,255,0.16),rgba(255,255,255,0.04))] px-4 py-3 text-sm font-semibold text-white backdrop-blur-md"
@@ -629,24 +629,24 @@ export default function Closets4Less() {
                   initial={{ opacity: 0, y: 32 }}
                 >
                   <p className="text-[0.68rem] font-semibold uppercase tracking-[0.36em] text-bronze">
-                    Mobile Luxury Protocol
+                    Why Closets4Less
                   </p>
                   <h2 className="mt-4 max-w-[12ch] font-serif text-4xl leading-none tracking-[-0.03em] text-ink sm:text-5xl">
                     The closet should feel built before it is bought.
                   </h2>
                   <p className="mt-5 text-sm leading-7 text-smoke sm:text-base">
-                    Every touch target clears 44px, the action rail lives in the thumb zone, and every motion closes with the calm resistance of premium drawer hardware.
+                    Every interaction is positioned for effortless reach, and every motion closes with the calm resistance of premium soft-close hardware.
                   </p>
 
                   <div className="mt-8 grid gap-3 sm:grid-cols-2">
                     {[
-                      { value: "100", unit: "spring", detail: "stiffness" },
-                      { value: "20", unit: "damping", detail: "soft-close tuning" },
-                      { value: "16", unit: "px", detail: "minimum form input size" },
-                      { value: "0", unit: "alerts", detail: "custom toast only" },
+                      { value: "3", unit: "day install", detail: "Most systems installed and finished in under 72 hours." },
+                      { value: "±1", unit: "mm precision", detail: "Custom-measured to the millimeter. No filler panels." },
+                      { value: "11", unit: "finishes", detail: "11 curated tactile finishes. Nothing off the shelf." },
+                      { value: "Life", unit: "time warranty", detail: "Every system backed by our full structural guarantee." },
                     ].map((item) => (
                       <div
-                        key={item.detail}
+                        key={item.unit}
                         className="rounded-[1.45rem] border border-[rgba(24,18,13,0.08)] bg-white/55 p-4"
                       >
                         <p className="font-serif text-4xl leading-none text-ink">
@@ -680,12 +680,12 @@ export default function Closets4Less() {
               <div className="mx-auto max-w-6xl">
                 <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
                   <div className="max-w-2xl">
-                    <Label>Swipe-to-Reveal</Label>
+                    <Label>Finish Gallery</Label>
                     <h2 className="mt-4 font-serif text-4xl leading-none tracking-[-0.03em] text-ink sm:text-5xl">
                       Closet finishes that snap like a modular rail.
                     </h2>
                     <p className="mt-4 text-sm leading-7 text-smoke sm:text-base">
-                      Each deck uses responsive Next image srcsets, mandatory horizontal snap points, and low-friction card geometry sized for one-hand browsing.
+                      Swipe through our curated finish families — dark woods, warm grain, light oak, and signature walk-ins. Find the one that feels right.
                     </p>
                   </div>
 
@@ -776,7 +776,7 @@ export default function Closets4Less() {
                 </div>
 
                 <p className="mt-4 text-sm leading-6 text-smoke">
-                  Pull from the very top edge to refresh the stack. The C4L mark replaces the browser spinner inside this scroll shell.
+                  Pull down from the top to shuffle the deck and discover new finish combinations.
                 </p>
               </div>
             </section>
@@ -784,12 +784,12 @@ export default function Closets4Less() {
             <section className="scroll-mt-28 px-4 py-8 sm:py-12" id="modules" ref={modularRef}>
               <div className="mx-auto max-w-6xl">
                 <div className="mb-7 max-w-2xl">
-                  <Label>Lazy Modular Grid</Label>
+                  <Label>Modular Systems</Label>
                   <h2 className="mt-4 font-serif text-4xl leading-none tracking-[-0.03em] text-ink sm:text-5xl">
-                    Off-screen modules stay light until the user asks for them.
+                    Your Wardrobe, Loaded the Way You Live.
                   </h2>
                   <p className="mt-4 text-sm leading-7 text-smoke sm:text-base">
-                    The modular grid is dynamically imported and mounted only near the viewport, reducing initial work while keeping texture-rich imagery sharp on demand.
+                    Every finish, every configuration — surfaced the moment you want it. Fast to browse, built to last.
                   </p>
                 </div>
 
@@ -860,10 +860,10 @@ export default function Closets4Less() {
                   <div className="border-b border-white/10 p-5 sm:p-6">
                     <Label>Design Consult</Label>
                     <h2 className="mt-4 font-serif text-4xl leading-none tracking-[-0.03em] text-white">
-                      Book the free consult from the thumb zone or right here.
+                      Book the free consult from the bar below, or fill in the form right here.
                     </h2>
                     <p className="mt-4 text-sm leading-7 text-white/68 sm:text-base">
-                      No pressure, no alerts, no zoom-jump form fields. Just a clean request and a fast callback.
+                      No pressure, no obligation. Just a clean request and a fast callback from our design team.
                     </p>
                   </div>
 
@@ -987,7 +987,7 @@ export default function Closets4Less() {
                   </p>
                 </div>
                 <p className="max-w-xl text-sm leading-6 text-smoke">
-                  Built on Next.js App Router, Tailwind utilities, Framer Motion spring transitions, branded pull-to-refresh, and a fixed thumb-zone action rail with safe-area protection.
+                  Serving all of Maricopa County. No-obligation consults, licensed installation, and a product line built to live as long as the home does.
                 </p>
               </div>
             </footer>
