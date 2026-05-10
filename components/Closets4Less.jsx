@@ -423,6 +423,204 @@ function usePullToRefresh(containerRef, onRefresh) {
   return { isRefreshing, isArmed, pullDistance };
 }
 
+function FinishCarousel({ finishes, onConsult }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartX = useRef(null);
+  const touchStartY = useRef(null);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [finishes]);
+
+  const goTo = (index) => {
+    setActiveIndex(Math.max(0, Math.min(index, finishes.length - 1)));
+  };
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartX.current === null) return;
+    const dx = touchStartX.current - e.changedTouches[0].clientX;
+    const dy = Math.abs(e.changedTouches[0].clientY - (touchStartY.current ?? 0));
+    if (Math.abs(dx) > 50 && Math.abs(dx) > dy) {
+      goTo(activeIndex + (dx > 0 ? 1 : -1));
+    }
+    touchStartX.current = null;
+    touchStartY.current = null;
+  };
+
+  return (
+    <>
+      {/* ── MOBILE: single-card swipe (< md) ── */}
+      <div className="md:hidden mt-7">
+        <div
+          className="relative overflow-hidden rounded-[2rem]"
+          style={{ height: "85vh" }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Card track — all cards in a row, translateX to reveal active */}
+          <div
+            className="flex h-full"
+            style={{
+              width: `${finishes.length * 100}%`,
+              transform: `translateX(${(-activeIndex * 100) / finishes.length}%)`,
+              transition: "transform 300ms ease",
+            }}
+          >
+            {finishes.map((finish) => (
+              <div
+                key={finish.id}
+                className="relative flex flex-col overflow-hidden"
+                style={{ width: `${100 / finishes.length}%`, flex: "0 0 auto" }}
+              >
+                {/* Top half: full-bleed image */}
+                <div className="relative" style={{ height: "50%" }}>
+                  <Image
+                    alt={`${finish.heading} closet finish`}
+                    className="object-cover"
+                    fill
+                    quality={75}
+                    sizes="100vw"
+                    src={finish.image}
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,12,9,0)_55%,rgba(17,12,9,0.55)_100%)]" />
+                  <div className="absolute left-4 top-4 rounded-full border border-white/20 bg-black/25 px-3 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-gold backdrop-blur-sm">
+                    {finish.badge}
+                  </div>
+                  <div className="absolute right-4 top-4 text-[0.65rem] font-semibold uppercase tracking-[0.3em] text-gold/90">
+                    {activeIndex + 1} / {finishes.length}
+                  </div>
+                </div>
+
+                {/* Bottom half: dark content */}
+                <div
+                  className="flex flex-1 flex-col p-6"
+                  style={{ background: "#1a1410" }}
+                >
+                  <p className="text-[0.65rem] font-semibold uppercase tracking-[0.34em] text-gold/80">
+                    Tactile Finish
+                  </p>
+                  <h3 className="mt-3 font-serif leading-[0.95] tracking-[-0.03em] text-white" style={{ fontSize: "2.75rem" }}>
+                    {finish.heading}
+                  </h3>
+                  <p className="mt-4 text-[0.95rem] leading-7 text-white/70">
+                    {finish.detail}
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    {finish.chips.map((chip) => (
+                      <span
+                        key={chip}
+                        className="rounded-full border border-white/15 bg-white/8 px-3 py-2 text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-white/80"
+                      >
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    className="tactile-control mt-auto w-full rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(250,243,232,0.95),rgba(222,199,156,0.96))] px-4 py-3.5 text-sm font-semibold text-ink"
+                    onClick={onConsult}
+                    type="button"
+                  >
+                    Book this palette
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Chevrons — vertically centered on the card boundary */}
+          {activeIndex > 0 && (
+            <button
+              aria-label="Previous finish"
+              className="tactile-control absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/30 text-2xl text-white/80 backdrop-blur-sm"
+              onClick={() => goTo(activeIndex - 1)}
+              type="button"
+            >
+              ‹
+            </button>
+          )}
+          {activeIndex < finishes.length - 1 && (
+            <button
+              aria-label="Next finish"
+              className="tactile-control absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/30 text-2xl text-white/80 backdrop-blur-sm"
+              onClick={() => goTo(activeIndex + 1)}
+              type="button"
+            >
+              ›
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── DESKTOP: multi-card horizontal scroll (≥ md) ── */}
+      <div className="-mx-4 mt-7 hidden snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 md:flex hide-scrollbar">
+        {finishes.map((finish, index) => (
+          <motion.article
+            key={finish.id}
+            className="grain-shell snap-start overflow-hidden rounded-[2rem] border border-white/10 text-white shadow-[0_38px_70px_-44px_rgba(24,18,13,0.9)]"
+            initial={{ opacity: 0, y: 24 }}
+            transition={{ ...SOFT_CLOSE, delay: index * 0.06 }}
+            viewport={{ amount: 0.15, once: true }}
+            whileInView={{ opacity: 1, y: 0 }}
+          >
+            <div className="flex h-full min-w-[22rem] max-w-[22rem] flex-col lg:min-w-[24rem] lg:max-w-[24rem]">
+              <div className="relative aspect-[4/5]">
+                <Image
+                  alt={`${finish.heading} closet finish`}
+                  className="object-cover"
+                  fill
+                  quality={70}
+                  sizes="(max-width: 1024px) 22rem, 24rem"
+                  src={finish.image}
+                />
+                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,12,9,0)_0%,rgba(17,12,9,0.12)_48%,rgba(17,12,9,0.76)_100%)]" />
+                <div className="absolute left-4 top-4 rounded-full border border-white/20 bg-black/20 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-gold backdrop-blur-sm">
+                  {finish.badge}
+                </div>
+              </div>
+              <div className="flex flex-1 flex-col p-5">
+                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-gold/80">
+                  Tactile Finish
+                </p>
+                <h3 className="mt-3 font-serif text-3xl leading-none tracking-[-0.03em]">
+                  {finish.heading}
+                </h3>
+                <p className="mt-4 text-sm leading-7 text-white/72">
+                  {finish.detail}
+                </p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {finish.chips.map((chip) => (
+                    <span
+                      key={chip}
+                      className="rounded-full border border-white/14 bg-white/6 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/80"
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+                <button
+                  className="tactile-control mt-6 flex w-full items-center justify-between rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(250,243,232,0.95),rgba(222,199,156,0.96))] px-4 py-3 text-sm font-semibold text-ink"
+                  onClick={onConsult}
+                  type="button"
+                >
+                  <span>Book this palette</span>
+                  <span className="text-[0.68rem] uppercase tracking-[0.28em] text-smoke">
+                    Free consult
+                  </span>
+                </button>
+              </div>
+            </div>
+          </motion.article>
+        ))}
+      </div>
+    </>
+  );
+}
+
 export default function Closets4Less() {
   const scrollRef = useRef(null);
   const modularRef = useRef(null);
@@ -711,69 +909,10 @@ export default function Closets4Less() {
                   </div>
                 </div>
 
-                <div className="-mx-4 mt-7 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 hide-scrollbar">
-                  {visibleFinishes.map((finish, index) => (
-                    <motion.article
-                      key={finish.id}
-                      className="grain-shell snap-start overflow-hidden rounded-[2rem] border border-white/10 text-white shadow-[0_38px_70px_-44px_rgba(24,18,13,0.9)]"
-                      initial={{ opacity: 0, y: 24 }}
-                      transition={{ ...SOFT_CLOSE, delay: index * 0.06 }}
-                      viewport={{ amount: 0.15, once: true }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                    >
-                      <div className="flex h-full min-w-[82vw] max-w-[82vw] flex-col sm:min-w-[22rem] sm:max-w-[22rem] lg:min-w-[24rem] lg:max-w-[24rem]">
-                        <div className="relative aspect-[4/5]">
-                          <Image
-                            alt={`${finish.heading} closet finish`}
-                            className="object-cover"
-                            fill
-                            quality={70}
-                            sizes="(max-width: 640px) 82vw, (max-width: 1024px) 22rem, 24rem"
-                            src={finish.image}
-                          />
-                          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,12,9,0)_0%,rgba(17,12,9,0.12)_48%,rgba(17,12,9,0.76)_100%)]" />
-                          <div className="absolute left-4 top-4 rounded-full border border-white/20 bg-black/20 px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-gold backdrop-blur-sm">
-                            {finish.badge}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-1 flex-col p-5">
-                          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.34em] text-gold/80">
-                            Tactile Finish
-                          </p>
-                          <h3 className="mt-3 font-serif text-3xl leading-none tracking-[-0.03em]">
-                            {finish.heading}
-                          </h3>
-                          <p className="mt-4 text-sm leading-7 text-white/72">
-                            {finish.detail}
-                          </p>
-
-                          <div className="mt-5 flex flex-wrap gap-2">
-                            {finish.chips.map((chip) => (
-                              <span
-                                key={chip}
-                                className="rounded-full border border-white/14 bg-white/6 px-3 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-white/80"
-                              >
-                                {chip}
-                              </span>
-                            ))}
-                          </div>
-
-                          <button
-                            className="tactile-control mt-6 flex w-full items-center justify-between rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(250,243,232,0.95),rgba(222,199,156,0.96))] px-4 py-3 text-sm font-semibold text-ink"
-                            onClick={() => scrollToSection("consult")}
-                            type="button"
-                          >
-                            <span>Book this palette</span>
-                            <span className="text-[0.68rem] uppercase tracking-[0.28em] text-smoke">
-                              Free consult
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-                    </motion.article>
-                  ))}
-                </div>
+                <FinishCarousel
+                  finishes={visibleFinishes}
+                  onConsult={() => scrollToSection("consult")}
+                />
 
                 <p className="mt-4 text-sm leading-6 text-smoke">
                   Pull down from the top to shuffle the deck and discover new finish combinations.
